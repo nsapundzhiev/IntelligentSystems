@@ -1,27 +1,102 @@
 package fmi.intelligent.systems.homeworks.third;
 
 import java.util.Random;
-import java.util.Scanner;
 
 class NQueensSolver {
-	private static int[] conflicts;
-	private static int[] queensTable;
-	private static Random rand;
 
-	private static void randInitTable(int queensCount) {
+	/**
+	 * Coefficient of which depends how many times queues should be shuffled
+	 * before starting algorithm again.
+	 */
+	private static final int COEFFICIENT = 3;
+
+	/**
+	 * Queens Count.
+	 */
+	private int queensCount;
+
+	/**
+	 * Array with queens conflicts.
+	 */
+	private int[] conflicts;
+
+	/**
+	 * Table with queens positions - array index is column and value on index is row.
+	 */
+	private int[] queensTable;
+
+	/**
+	 * Random instance.
+	 */
+	private Random randomInstance;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param queensCount queens count.
+	 */
+	NQueensSolver(int queensCount) {
+		this.queensCount = queensCount;
+	}
+
+	/**
+	 * Solve nqueens with min conflicts algorithm.
+	 */
+	void solve() {
+		randInitTable();
+
+		for (int i = 0; i < queensCount * COEFFICIENT; i++) {
+			int columnWithMaxConflicts = getColumnWithMaxConflicts();
+
+			queensTable[columnWithMaxConflicts] = getRowWithMinConflicts(columnWithMaxConflicts);
+
+			calculateConflicts();
+
+			if (!hasConflicts()) {
+				break;
+			}
+		}
+
+		if (hasConflicts()) {
+			solve();
+		}
+	}
+
+	/**
+	 * Print board with solution.
+	 * ('*' - queen, 'o' - empty field)
+	 */
+	void printQueensTable() {
+		for (int i = 0; i < queensCount; i++) {
+			for (int queen : queensTable) {
+				if (i == queen) {
+					System.out.print("* ");
+				} else {
+					System.out.print("o ");
+				}
+			}
+			System.out.println();
+		}
+	}
+
+	/**
+	 * Generate initial table with queens.
+	 */
+	private void randInitTable() {
+		randomInstance = new Random();
 		queensTable = new int[queensCount];
 
 		for (int i = 0; i < queensCount; i++) {
-			rand = new Random();
-			int randNumber = rand.nextInt(queensCount);
-
-			queensTable[i] = randNumber;
+			queensTable[i] = randomInstance.nextInt(queensCount);
 		}
 
-		calculateConflicts(queensCount);
+		calculateConflicts();
 	}
 
-	private static void calculateConflicts(int queensCount) {
+	/**
+	 * Calculates every queen conflicts.
+	 */
+	private void calculateConflicts() {
 		conflicts = new int[queensCount];
 
 		for (int i = 0; i < queensCount - 1; i++) {
@@ -44,7 +119,13 @@ class NQueensSolver {
 		}
 	}
 
-	private static int getColumnWithMaxConflicts() {
+	/**
+	 * Calculate on which column have max number of conflicts.
+	 *
+	 * @return column with max number of conflicts, if there are more than one
+	 * columns with equal number of conflicts return randomly one of them.
+	 */
+	private int getColumnWithMaxConflicts() {
 		int column = 0;
 		int maxConflicts = conflicts[0];
 
@@ -55,45 +136,61 @@ class NQueensSolver {
 			}
 
 			if (maxConflicts == conflicts[i]) {
-				column = rand.nextBoolean() ? column : i;
+				column = randomInstance.nextBoolean() ? column : i;
 			}
 		}
 
 		return column;
 	}
 
-	private static int getRowWithMinConflicts(int column, int queensCount) {
-		int[] confl = new int[queensCount];
-		int min = -1;
-		int row = 0;
-
-		for (int j = 0; j < queensCount; j++) {
-			if (queensTable[column] == queensTable[j]) {
-				++confl[j];
-			}
-
-			if (queensTable[column] - column == queensTable[j] - j) {
-				++conflicts[j];
-			}
-
-			if (queensTable[column] + column == queensTable[j] + j) {
-				++conflicts[j];
-			}
-		}
+	/**
+	 * Calculate on which row of a column there are min number of conflicts.
+	 *
+	 * @param column column with max conflicts.
+	 * @return row of a column with min number of conflicts, if there are
+	 * more than one rows with equal number of conflicts return randomly one of them.
+	 */
+	private int getRowWithMinConflicts(int column) {
+		int[] tempTable = new int[queensCount];
+		int[] columnConflicts = new int[queensCount];
 
 		for (int i = 0; i < queensCount; i++) {
-			if (min > queensTable[i]) {
-				min = queensTable[i];
-				row = i;
+			System.arraycopy(queensTable, 0, tempTable, 0, queensCount);
+			tempTable[column] = i;
+
+			for (int j = 0; j < queensCount; j++) {
+				if (column == j) {
+					continue;
+				}
+
+				if (tempTable[column] == tempTable[j]) {
+					++columnConflicts[i];
+				}
+
+				if (tempTable[column] - column == tempTable[j] - j) {
+					++columnConflicts[i];
+				}
+
+				if (tempTable[column] + column == tempTable[j] + j) {
+					++columnConflicts[i];
+				}
 			}
 		}
+
+		int row = getMinConflicts(columnConflicts);
+
+		conflicts[column] = columnConflicts[row];
 
 		return row;
 	}
 
-	private static boolean hasConflicts() {
+	/**
+	 * Check if there are conflicts.
+	 * @return true if there are conflicts, false otherwise.
+	 */
+	private boolean hasConflicts() {
 		for (int conflict : conflicts) {
-			if (conflict > 1) {
+			if (conflict >= 1) {
 				return true;
 			}
 		}
@@ -101,52 +198,28 @@ class NQueensSolver {
 		return false;
 	}
 
-	private static void solve(int queensCount) {
-		randInitTable(queensCount);
+	/**
+	 * Get row of a column on which there are min number of conflicts.
+	 *
+	 * @param conflicts table with conflicts on column.
+	 * @return row with min number of conflicts.
+	 */
+	private int getMinConflicts(int[] conflicts) {
+		int min = Integer.MAX_VALUE;
+		int row = 0;
 
-		int k = 0;
-		while (k < Integer.MAX_VALUE) {
-			int colMaxConfl = getColumnWithMaxConflicts();
-			int rowMinConfl = getRowWithMinConflicts(colMaxConfl, queensCount);
-
-			queensTable[colMaxConfl] = rowMinConfl;
-
-			calculateConflicts(queensCount);
-
-			if (!hasConflicts()) {
-				break;
+		for (int k = 0; k < queensCount; k++) {
+			if (min == conflicts[k]) {
+				row = randomInstance.nextBoolean() ? row : k;
 			}
 
-			++k;
-		}
-
-		if (hasConflicts()) {
-			solve(queensCount);
-		}
-	}
-
-
-	private static void printQueensTable(int[] table) {
-		for (int i = 0; i < table.length; i++) {
-			for (int queen : table) {
-				if (i == queen) {
-					System.out.print("* ");
-				} else {
-					System.out.print("_ ");
-				}
+			if (min > conflicts[k]) {
+				min = conflicts[k];
+				row = k;
 			}
-			System.out.println();
 		}
-	}
 
-	public static void main(String[] args) {
-		Scanner input = new Scanner(System.in);
-		System.out.println("Enter the number of queensTable: ");
-		int queensCount = input.nextInt();
-
-		solve(queensCount);
-		printQueensTable(queensTable);
-		System.out.println("----------------");
+		return row;
 	}
 }
 
