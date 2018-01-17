@@ -1,22 +1,27 @@
 package fmi.intelligent.systems.homeworks.second;
 
-import java.util.*;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.PriorityQueue;
 
 import static fmi.intelligent.systems.homeworks.second.Direction.*;
 
 class Game {
 	private static int size;
-	private static int[][] table;
 	private static int zeroPositionX;
-	private static PriorityQueue<Table> queue;
-	private static final TableComparator comparator = new TableComparator();
-	private static Queue<String> path;
 
+	private static int[][] table;
+
+	private static Table parent;
+	private static final TableComparator comparator = new TableComparator();
+
+	private static Set<Table> visitedStates;
+	private static PriorityQueue<Table> queue;
 
 	public static void main(String[] args) {
 		queue = new PriorityQueue<>(comparator);
-//		visitedStates = new HashSet<>();
-		path = new LinkedList<>();
+		visitedStates = new HashSet<>();
 
 		initTable();
 
@@ -25,64 +30,58 @@ class Game {
 			initTable();
 		}
 
-		Table parent = new Table(table, null, null);
+		parent = new Table(table);
 		queue.add(parent);
-//		visitedStates.add(parent);
+
 		aStarSearch();
 
-		System.out.println(path.size());
-		path.forEach(System.out::println);
+		parent.printPathAndDistance();
 	}
 
-
+	/**
+	 * A* search algorithm.
+	 */
 	private static void aStarSearch() {
-		Table finalChild = queue.peek();
-		finalChild.setMove("");
 		while (queue.peek().getManhattanDistance() != 0) {
-			Table t = queue.poll();
+			Table currentTable = queue.poll();
+			visitedStates.add(currentTable);
 
-			if (t.getParent() != null) {
-				path.add(t.getMove());
+			if (currentTable.canGenerateLeftChild()) {
+				addChildInQueueIfPossible(currentTable, LEFT);
 			}
 
-			if (t.canGenerateLeftChild()) {
-				Table child = t.generateChild(t, LEFT);
-
-//				if (!visitedStates.contains(child)) {
-				queue.add(child);
-//				}
+			if (currentTable.canGenerateRightChild()) {
+				addChildInQueueIfPossible(currentTable, RIGHT);
 			}
 
-			if (t.canGenerateRightChild()) {
-				Table child = t.generateChild(t, RIGHT);
-
-//				if (!visitedStates.contains(child)) {
-				queue.add(child);
-//				}
+			if (currentTable.canGenerateDownChild()) {
+				addChildInQueueIfPossible(currentTable, DOWN);
 			}
 
-			if (t.canGenerateDownChild()) {
-				Table child = t.generateChild(t, DOWN);
-
-//				if (!visitedStates.contains(child)) {
-				queue.add(child);
-//				}
+			if (currentTable.canGenerateUpChild()) {
+				addChildInQueueIfPossible(currentTable, UP);
 			}
-
-			if (t.canGenerateUpChild()) {
-				Table child = t.generateChild(t, UP);
-
-//				if (!visitedStates.contains(child)) {
-				queue.add(child);
-//				}
-			}
-
-			finalChild = queue.peek();
 		}
 
-		path.add(finalChild.getMove());
+		parent = queue.peek();
 	}
 
+	/**
+	 * Generate child from current table based in direction and add it to queue if it is not visited.
+	 * @param currentTable current table,
+	 * @param direction the direction we move zero.
+	 */
+	private static void addChildInQueueIfPossible (Table currentTable, Direction direction) {
+		Table child = currentTable.generateChild(currentTable, direction);
+
+		if (!visitedStates.contains(child)) {
+			queue.add(child);
+		}
+	}
+
+	/**
+	 * Generate initial state of table based on user input.
+	 */
 	private static void initTable() {
 		Scanner input = new Scanner(System.in);
 		size = input.nextInt();
@@ -101,6 +100,11 @@ class Game {
 		}
 	}
 
+	/**
+	 * Check if initial state has solution.
+	 * @param table initial state.
+	 * @return true if table has solution, otherwise return false.
+	 */
 	private static boolean hasSolution(int[][] table) {
 		int inversions = calculateInversions(table);
 
@@ -108,20 +112,13 @@ class Game {
 				(isEven(size) && (isEven(zeroPositionX) == isEven(inversions)));
 	}
 
+	/**
+	 * Calculate inversions in table.
+	 * @param table current table state.
+	 * @return number of inversions.
+	 */
 	private static int calculateInversions(int[][] table) {
-		int[] temp = new int[size * size - 1];
-		int k = 0;
-		for (int i = 0; i < size; i++) {
-			for (int j = 0; j < size; j++) {
-				if (table[i][j] == 0) {
-					continue;
-				}
-
-				temp[k] = table[i][j];
-				++k;
-			}
-		}
-
+		int[] temp = fillTableInArray(table);
 		int inversions = 0;
 
 		for (int i = 0; i < size * size - 2; i++) {
@@ -135,6 +132,28 @@ class Game {
 		return inversions;
 	}
 
+	/**
+	 * Fill data from table in array, with same order of elements.
+	 * @param table current table.
+	 * @return array with data from table, without zero.
+	 */
+	private static int[] fillTableInArray(int[][] table) {
+		int[] temp = new int[size * size - 1];
+		int k = 0;
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				if (table[i][j] == 0) {
+					continue;
+				}
+
+				temp[k] = table[i][j];
+				++k;
+			}
+		}
+
+		return temp;
+	}
+
 	private static boolean isEven(int number) {
 		return number % 2 == 0;
 	}
@@ -142,13 +161,4 @@ class Game {
 	private static boolean isOdd(int number) {
 		return number % 2 == 1;
 	}
-//
-//	private static void printTable(int[][] table) {
-//		for (int[] aTable : table) {
-//			for (int j = 0; j < table.length; j++) {
-//				System.out.print(aTable[j] + " ");
-//			}
-//			System.out.println();
-//		}
-//	}
 }
