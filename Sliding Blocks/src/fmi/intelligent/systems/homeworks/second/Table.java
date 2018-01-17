@@ -5,23 +5,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Table {
+    private static Map<Integer, Pair> solutionMap = new HashMap<>();
     private int size;
     private int distance;
     private int zeroPositionX;
     private int zeroPositionY;
     private int manhattanDistance;
-
     private int[][] table;
     private String[] path;
-
     private String move;
     private Table parent;
-
     private Map<Integer, Pair> map;
-    private static Map<Integer, Pair> solutionMap = new HashMap<>();
 
     /**
      * Constructor for initial - parent state.
+     *
      * @param table initial state.
      */
     Table(int[][] table) {
@@ -44,9 +42,10 @@ class Table {
 
     /**
      * Constructor for children states.
-     * @param table current table state.
+     *
+     * @param table  current table state.
      * @param parent parent state.
-     * @param move the way we get the current state from the parent.
+     * @param move   the way we get the current state from the parent.
      */
     Table(int[][] table, Table parent, String move) {
         this.table = table;
@@ -71,6 +70,7 @@ class Table {
 
     /**
      * Fill table with data from matrix table.
+     *
      * @param table current table state.
      */
     private void fillMapFromTable(int[][] table) {
@@ -114,7 +114,8 @@ class Table {
 
     /**
      * Generate child from parent.
-     * @param parent parent instance.
+     *
+     * @param parent    parent instance.
      * @param direction the direction we move zero.
      * @return new table with changed position of zero.
      */
@@ -149,9 +150,10 @@ class Table {
 
     /**
      * Swap position of zero.
+     *
      * @param table current table.
-     * @param x new x coordinate of zero.
-     * @param y new y coordinate of zero.
+     * @param x     new x coordinate of zero.
+     * @param y     new y coordinate of zero.
      */
     private void swapZeroPosition(int[][] table, int x, int y) {
         table[zeroPositionX][zeroPositionY] = table[x][y];
